@@ -10,6 +10,7 @@ You'll need `git` installed in your `$PATH`.
     $ git clone https://github.com/elbatico1/ColorToColor.git
 ##Windows - PowerShell
 - If you need, install [GitHub][] for windows.
+
     $ cd "~/AppData/Roaming/Sublime Text 3/Packages/"
     $ git clone https://github.com/elbatico1/ColorToColor.git
 #Usage
