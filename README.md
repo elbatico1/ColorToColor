@@ -1,9 +1,16 @@
 #Color To Color
 A [Sublime Text][] Package to convert Web Colors In any format: Hex, Rgb, Hsl, Hsv and Names.
 #Installation
-To determine. Waiting for approval from [Package Control][].
-
-Those guys are amazing!
+You'll need `git` installed in your `$PATH`.
+##OSX
+    $ cd ~/Library/Application\ Support/Sublime\ Text\ 3/Packages/
+    $ git clone https://github.com/elbatico1/ColorToColor.git
+##Linux
+    $ cd ~/.config/Sublime-Text-3/Packages/
+    $ git clone https://github.com/elbatico1/ColorToColor.git
+##Windows - PowerShell
+    $ cd "~/AppData/Roaming/Sublime Text 3/Packages/"
+    $ git clone https://github.com/elbatico1/ColorToColor.git
 #Usage
 Just select your entry and press `ctrl`+`shift`+`alt`+`c`, either `Window`, `OSX` or `Linux`.
 

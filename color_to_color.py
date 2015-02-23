@@ -4,6 +4,7 @@ class color_to_color(sublime_plugin.TextCommand):
 	windowList=None
 	lineRegion=None
 	windowEdit=None
+	RGB=re.compile(r"(?P<rgba_color>rgb\s*a?)\(\s*(?P<r_color>\d*)\s*\,\s*(?P<g_color>\d*)\s*\,\s*(?P<b_color>\d*)\s*\,?\s*(?P<a_color>\d*\.?\d?)?\s*\)?")
 	def run(self, edit):
 		sel=self.view.sel()
 		if len(sel) > 0:
@@ -11,7 +12,8 @@ class color_to_color(sublime_plugin.TextCommand):
 			self.lineSelect=sel[0]
 			s=self.view.substr(self.view.full_line(sel[0]))
 			a=self.view.rowcol(sel[0].begin())
-			match,matchRegion=self._getMatch(s,a)
+			match,matchRegion,k,v=self._getMatch(s,a)
+			self._convert(k,v)
 			matchList=None
 			viewList=None
 			typeList=["name","hex","rgb","hsl","hsv"]
@@ -24,12 +26,21 @@ class color_to_color(sublime_plugin.TextCommand):
 				self.lineRegion=matchRegion
 				self.view.show_popup_menu(viewList,self.onDone)
 	def _getMatch(self, s,a):
-		f=re.finditer(r"(#\w+)|rgb\s?\(\s?(\d*)\s?\,\s?(\d*)\s?\,\s?(\d*)\s?\)?|hsl\s?\(\s?(\d*\.?\d*)\s?\,\s?(\d*\.?\d*)\%?\s?\,\s?(\d*\.?\d*)\%?\s?\)?|hsv\s?\(\s?(\d*\.?\d*)\s?\,\s?(\d*\.?\d*)\%?\s?\,\s?(\d*\.?\d*)\%?\s?\)?|(?<!#)([a-z]+)",s)
+		f=re.finditer(r"(?P<hex_color>#\w+)|(?P<rgb_color>rgb\s*a?\(\s*\d*\s*\,\s*\d*\s*\,\s*\d*\s*\,?\s*\d*\.?\d*\s*\)?)|(?P<hsl_color>hsl\s*a?\(\s*\d*\.?\d*\s*\,\s*\d*\.?\d*\%?\s*\,\s*\d*\.?\d*\%?\s*\,?\s*\d*\.?\d*\s*\)?)|(?P<hsv_color>hsv\s*a?\(\s*\d*\.?\d*\s*\,\s*\d*\.?\d*\%?\s*\,\s*\d*\.?\d*\%?\s*\,?\d*\.?\d*\s*\)?)|(?<!#)(?P<name_color>[a-z]+)",s)
 		if f:
+			i=0
 			for m in f:
 				if m.start() <= a[1] and m.end() >= a[1]:
 					x=self.view.text_point(a[0],m.start())
-					return (m.group(),sublime.Region(x,x+(m.end()-m.start())))
+					key=None
+					value=None
+					for k,v in m.groupdict().items():
+						if v:
+							print (k,v)
+							key=k
+							value=v
+					return (m.group(),sublime.Region(x,x+(m.end()-m.start())),key,value)
+				i+=1
 			return None
 	def onDone(self, p):
 		if p > -1:
@@ -40,17 +51,37 @@ class color_to_color(sublime_plugin.TextCommand):
 			self.lineRegion=None
 			self.windowEdit=None
 	def _search(self, s):
-		c=re.compile(r"#|rgb|hsl|hsv|[a-z]+")
+		c=re.compile(r"#|rgb|rgba|hsl|hsv|[a-z]+")
 		r=c.search(s)
 		if r:
 			return self._isValid(r.group(), s)
 		else:
 			return None
+	def _convert(self,k,v):
+		if k=="hex_color":
+			print(v,"hex")
+		elif k=="rgb_color":
+			m=self.RGB.match(v)
+			if len(m.groupdict()["a_color"]) > 0:
+				print("yes alpha", m.groupdict()["a_color"])
+			if m.groupdict()["rgba_color"] == "rgba":
+				print("is rgba", m.groupdict()["rgba_color"])
+			print(v)
+		elif k=="hsl_color":
+			print(v)
+		elif k=="hsv_color":
+			print(v)
+		elif k=="name_color":
+			print(v)
 	def _isValid(self, s, m):
 		if s=="#":
-			p=re.compile(r".*#(.*)")
+			p=re.compile(r".*#(?P<hex_color>.*)")
 			r=p.match(m)
 			if r:
+				if "rgb_color" in r.groups():
+					print ("yes")
+				else:
+					print("no")
 				f=self._lookUp("hex",r.group(1).lower())
 				if f:
 					return f
@@ -62,8 +93,8 @@ class color_to_color(sublime_plugin.TextCommand):
 					return {"type":"hex","name":"- none -","hex":hx,"rgb":rgb,"hsl":hsl,"hsv":hsv}
 			else:
 				return None
-		elif s=="rgb":
-			p=re.compile(r".*rgb\s?\(\s?(\d*)\s?\,\s?(\d*)\s?\,\s?(\d*)\s?\)?")
+		elif s=="rgb" or s=="rgba":
+			p=re.compile(r".*rgb\s?a?\(\s?(?P<r_color>\d*)\s?\,\s?(?P<g_color>\d*)\s?\,\s?(?P<b_color>\d*)\s?\,?\s?(?P<a_color>\d*\.?\d?)?\)?")
 			r=p.match(m)
 			if r:
 				f=self._lookUp(s,[int(r.group(1)),int(r.group(2)),int(r.group(3))])

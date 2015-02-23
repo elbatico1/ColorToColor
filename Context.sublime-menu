@@ -1,0 +1,47 @@
+[
+    { 
+    	"caption": "-",
+    	"id": "Color To Color"
+    },
+    {
+    	"command": "color_to_color",
+    	"caption": "Color To Color"
+    },
+    {
+    	"caption": "Convert All To",
+    	"children": [
+    		{
+    			"command": "color_to_color",
+    			"caption": "Hex"
+    		},
+    		{
+    			"command": "color_to_color",
+    			"caption": "Rgb"
+    		},
+    		{
+    			"command": "color_to_color",
+    			"caption": "Hsl"
+    		},
+    		{
+    			"command": "color_to_color",
+    			"caption": "Hsv"
+    		},
+    		{
+    			"command": "color_to_color",
+    			"caption": "HexA"
+    		},
+    		{
+    			"command": "color_to_color",
+    			"caption": "RgbA"
+    		},
+    		{
+    			"command": "color_to_color",
+    			"caption": "HslA"
+    		},
+    		{
+    			"command": "color_to_color",
+    			"caption": "HsvA"
+    		}
+	    ]
+    }
+]
