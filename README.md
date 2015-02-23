@@ -24,6 +24,8 @@ You'll need `git` installed in your `$PATH`.
 #Usage
 Just select your entry and press `ctrl`+`shift`+`alt`+`c`, either `Window`, `OSX` or `Linux`.
 
+![ScreenShot](http://www.somethinglikethis.it/img/hosted/color_to_color.gif)
+
 The command is also present under `Tool`->`ColorToColor`
 
 A popup window will show five possible choices:
