@@ -1,7 +1,7 @@
 [
     { 
     	"caption": "-",
-    	"id": "Color To Color"
+    	"id": "color-to-color"
     },
     {
     	"command": "color_to_color",

@@ -1,0 +1,32 @@
+#Updates
+
+Add alpha channel convertion to all values
+
+#Definition
+
+Convert a given value by place the cursor at the beginning, end, or any position inside the value or by selecting the whole value.
+Value can be in format:
+
+- css name
+
+- #ffffff
+- #ffffffff
+
+- rgb(255, 255, 255)
+- rgba(255, 255, 255, 1.0)
+
+- hsl(360.0, 100.0%, 100.0%)
+- hsla(360.0, 100.0%, 100.0%, 1.0)
+
+- hsv(360.0, 100.0%, 100.0%)
+- hsva(360.0, 100.0%, 100.0%, 1.0)
+
+#Usage
+
+ctrl+shift+alt+c convert any color formats.
+
+Context Menu -> ColorToColor
+
+#Preferences
+
+Preferences -> Package Settings -> Default/User Sttings : Default/User Key Binding

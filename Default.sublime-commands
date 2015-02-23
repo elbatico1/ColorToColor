@@ -1,6 +1,11 @@
 [
 	{
 		"caption": "ColorToColor: Convert",
-		"command": "color_to_color"
+		"command": "color_to_color",
+		"args":
+		{
+			"id": "color-to-color",
+			"file": "${packages}/ColorToColor/Main.sublime-menu"}
+		}
 	}
 ]

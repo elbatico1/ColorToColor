@@ -5,17 +5,19 @@
 		[
 			{
 				"caption": "ColorToColor",
-				"command": "color_to_color"
+				"mnemonic": "R",
+				"command": "color_to_color",
+				"id": "color-to-color"
 			}
 		],
 		"id": "preferences",
-		"caption": "preferences",
+		"caption": "Preferences",
 		"mnemonic": "n",
 		"children":
 		[
 			{
 				"caption": "Package Settings",
-				"mnemonic": "p",
+				"mnemonic": "P",
 				"id": "package-settings",
 				"children":
 				[

@@ -4,7 +4,10 @@ class color_to_color(sublime_plugin.TextCommand):
 	windowList=None
 	lineRegion=None
 	windowEdit=None
-	RGB=re.compile(r"(?P<rgba_color>rgb\s*a?)\(\s*(?P<r_color>\d*)\s*\,\s*(?P<g_color>\d*)\s*\,\s*(?P<b_color>\d*)\s*\,?\s*(?P<a_color>\d*\.?\d?)?\s*\)?")
+	COLOR=re.compile(r"#(?P<hex_color>\w+)|(?P<rgb_color>rgb\s*a?\(\s*\d*\s*\,\s*\d*\s*\,\s*\d*\s*\,?\s*\d*\.?\d*\s*\)?)|(?P<hsl_color>hsl\s*a?\(\s*\d*\.?\d*\s*\,\s*\d*\.?\d*\%?\s*\,\s*\d*\.?\d*\%?\s*\,?\s*\d*\.?\d*\s*\)?)|(?P<hsv_color>hsv\s*a?\(\s*\d*\.?\d*\s*\,\s*\d*\.?\d*\%?\s*\,\s*\d*\.?\d*\%?\s*\,?\d*\.?\d*\s*\)?)|(?<!#)(?P<name_color>[a-z]+)")
+	RGB=re.compile(r"(?P<rgba_color>rgb\s*a?)\(\s*(?P<r_color>\d*)\s*\,\s*(?P<g_color>\d*)\s*\,\s*(?P<b_color>\d*)\s*\,?\s*(?P<a_color>\d*\.?\d*)?\s*\)?")
+	HSL=re.compile(r"(?P<hsla_color>hsl\s*a?)\(\s*(?P<h_color>\d*\.?\d*)\s*\,\s*(?P<s_color>\d*\.?\d*)\%?\s*\,\s*(?P<l_color>\d*\.?\d*)\%?\s*\,?\s*(?P<a_color>\d*\.?\d*)?\s*\)?")
+	HSV=re.compile(r"(?P<hsva_color>hsv\s*a?)\(\s*(?P<h_color>\d*\.?\d*)\s*\,\s*(?P<s_color>\d*\.?\d*)\%?\s*\,\s*(?P<v_color>\d*\.?\d*)\%?\s*\,?\s*(?P<a_color>\d*\.?\d*)?\s*\)?")
 	def run(self, edit):
 		sel=self.view.sel()
 		if len(sel) > 0:
@@ -13,20 +16,20 @@ class color_to_color(sublime_plugin.TextCommand):
 			s=self.view.substr(self.view.full_line(sel[0]))
 			a=self.view.rowcol(sel[0].begin())
 			match,matchRegion,k,v=self._getMatch(s,a)
-			self._convert(k,v)
-			matchList=None
-			viewList=None
-			typeList=["name","hex","rgb","hsl","hsv"]
+			match=self._convert(k,v)
+			# matchList=None
+			# viewList=None
+			# typeList=["name","hex","rgb","hsl","hsv"]
+			# if match:
+			# 	matchList=self._search(match)
+			# if matchList:
+			# 	viewList=["name : "+matchList["name"],"hex : "+"#"+matchList["hex"],"rgb : "+matchList["rgb"][3],"hsl : "+matchList["hsl"][3],"hsv : "+matchList["hsv"][3]]
 			if match:
-				matchList=self._search(match)
-			if matchList:
-				viewList=["name : "+matchList["name"],"hex : "+"#"+matchList["hex"],"rgb : "+matchList["rgb"][3],"hsl : "+matchList["hsl"][3],"hsv : "+matchList["hsv"][3]]
-			if viewList:
-				self.windowList=viewList
+				self.windowList=match
 				self.lineRegion=matchRegion
-				self.view.show_popup_menu(viewList,self.onDone)
+				self.view.show_popup_menu(match,self.onDone)
 	def _getMatch(self, s,a):
-		f=re.finditer(r"(?P<hex_color>#\w+)|(?P<rgb_color>rgb\s*a?\(\s*\d*\s*\,\s*\d*\s*\,\s*\d*\s*\,?\s*\d*\.?\d*\s*\)?)|(?P<hsl_color>hsl\s*a?\(\s*\d*\.?\d*\s*\,\s*\d*\.?\d*\%?\s*\,\s*\d*\.?\d*\%?\s*\,?\s*\d*\.?\d*\s*\)?)|(?P<hsv_color>hsv\s*a?\(\s*\d*\.?\d*\s*\,\s*\d*\.?\d*\%?\s*\,\s*\d*\.?\d*\%?\s*\,?\d*\.?\d*\s*\)?)|(?<!#)(?P<name_color>[a-z]+)",s)
+		f=re.finditer(self.COLOR,s)
 		if f:
 			i=0
 			for m in f:
@@ -36,10 +39,10 @@ class color_to_color(sublime_plugin.TextCommand):
 					value=None
 					for k,v in m.groupdict().items():
 						if v:
-							print (k,v)
 							key=k
 							value=v
-					return (m.group(),sublime.Region(x,x+(m.end()-m.start())),key,value)
+					return (None,sublime.Region(x,x+(m.end()-m.start())),key,value)
+					# return (m.group(),sublime.Region(x,x+(m.end()-m.start())),key,value)
 				i+=1
 			return None
 	def onDone(self, p):
@@ -58,21 +61,123 @@ class color_to_color(sublime_plugin.TextCommand):
 		else:
 			return None
 	def _convert(self,k,v):
+		a=None
 		if k=="hex_color":
-			print(v,"hex")
+			if len(v) > 6:
+				a=self._rod2(int("0x"+v[-2:],16)/255)
+				tohex="#"+v[:-2]
+				tohexa="#"+v
+			else:
+				a=1.0
+				tohex="#"+v
+				tohexa="#"+v+"FF"
+			toname,tohexfromname=self._getName("hex",tohex[1:])
+			if toname == None:
+				toname="- none -"
+			bgr=self.HexToRgb(tohex[1:])
+			torgb=bgr[3]
+			torgba="rgba"+torgb[3:-1]+", "+str(a)+")"
+			tohsl=self.RgbToHsl(bgr[0],bgr[1],bgr[2])[3]
+			tohsla="hsla"+tohsl[3:-1]+", "+str(a)+")"
+			tohsv=self.RgbToHsv(bgr[0],bgr[1],bgr[2])[3]
+			tohsva="hsva"+tohsv[3:-1]+", "+str(a)+")"
+			print("hex",toname,torgb,torgba,tohsl,tohsla,tohsv,tohsva,tohex,tohexa,v)
+			return ["name : "+toname,"hex : "+tohex,"hexA : "+tohexa,"rgb : "+torgb,"rgba : "+torgba,"hsl : "+tohsl,"hsla : "+tohsla,"hsv : "+tohsv,"hsva : "+tohsva]
 		elif k=="rgb_color":
 			m=self.RGB.match(v)
+			rgba=m.group("rgba_color")
+			r=float(m.group("r_color"))
+			g=float(m.group("g_color"))
+			b=float(m.group("b_color"))
 			if len(m.groupdict()["a_color"]) > 0:
-				print("yes alpha", m.groupdict()["a_color"])
-			if m.groupdict()["rgba_color"] == "rgba":
-				print("is rgba", m.groupdict()["rgba_color"])
-			print(v)
+				a=float(m.groupdict()["a_color"])
+			else:
+				a=1.0
+			tohex="#"+self.RgbToHex(r,g,b)
+			tohexa=tohex+str("%02X" % int(a*255))
+			toname,tohexfromname=self._getName("hex",tohex[1:])
+			if toname == None:
+				toname="- none -"
+			torgb="rgb("+str(self._rod(r))+", "+str(self._rod(g))+", "+str(self._rod(b))+")"
+			torgba="rgba"+torgb[3:-1]+", "+str(a)+")"
+			tohsl=self.RgbToHsl(r,g,b)[3]
+			tohsla="hsla"+tohsl[3:-1]+", "+str(a)+")"
+			tohsv=self.RgbToHsv(r,g,b)[3]
+			tohsva="hsva"+tohsv[3:-1]+", "+str(a)+")"
+			print("rgb",toname,torgb,torgba,tohsl,tohsla,tohsv,tohsva,tohex,tohexa,v)
+			return ["name : "+toname,"hex : "+tohex,"hexA : "+tohexa,"rgb : "+torgb,"rgba : "+torgba,"hsl : "+tohsl,"hsla : "+tohsla,"hsv : "+tohsv,"hsva : "+tohsva]
 		elif k=="hsl_color":
-			print(v)
+			m=self.HSL.match(v)
+			hsla=m.group("hsla_color")
+			h=float(m.group("h_color"))
+			s=float(m.group("s_color"))
+			l=float(m.group("l_color"))
+			if len(m.groupdict()["a_color"]) > 0:
+				a=float(m.groupdict()["a_color"])
+			else:
+				a=1.0
+			bgr=self.HslToRgb(h,s,l)
+			torgb=bgr[3]
+			torgba="rgba"+torgb[3:-1]+", "+str(a)+")"
+			tohex="#"+self.RgbToHex(bgr[0],bgr[1],bgr[2])
+			tohexa=tohex+str("%02X" % int(a*255))
+			toname,tohexfromname=self._getName("hex",tohex[1:])
+			if toname == None:
+				toname="- none -"
+			tohsl="hsl("+str(self._rod2(h))+", "+str(self._rod2(s))+"%, "+str(self._rod2(l))+"%)"
+			tohsla="hsla"+tohsl[3:-1]+", "+str(a)+")"
+			tohsv=self.RgbToHsv(bgr[0],bgr[1],bgr[2])[3]
+			tohsva="hsva"+tohsv[3:-1]+", "+str(a)+")"
+			print("hsl",toname,torgb,torgba,tohsl,tohsla,tohsv,tohsva,tohex,tohexa,v)
+			return ["name : "+toname,"hex : "+tohex,"hexA : "+tohexa,"rgb : "+torgb,"rgba : "+torgba,"hsl : "+tohsl,"hsla : "+tohsla,"hsv : "+tohsv,"hsva : "+tohsva]
 		elif k=="hsv_color":
-			print(v)
+			m=self.HSV.match(v)
+			hsva=m.group("hsva_color")
+			h=float(m.group("h_color"))
+			s=float(m.group("s_color"))
+			vv=float(m.group("v_color"))
+			if len(m.groupdict()["a_color"]) > 0:
+				a=float(m.groupdict()["a_color"])
+			else:
+				a=1.0
+			bgr=self.HsvToRgb(h,s,vv)
+			torgb=bgr[3]
+			torgba="rgba"+torgb[3:-1]+", "+str(a)+")"
+			tohex="#"+self.RgbToHex(bgr[0],bgr[1],bgr[2])
+			tohexa=tohex+str("%02X" % int(a*255))
+			toname,tohexfromname=self._getName("hex",tohex[1:])
+			if toname == None:
+				toname="- none -"
+			tohsl=self.RgbToHsl(bgr[0],bgr[1],bgr[2])[3]
+			tohsla="hsla"+tohsl[3:-1]+", "+str(a)+")"
+			tohsv="hsv("+str(self._rod2(h))+", "+str(self._rod2(s))+", "+str(self._rod2(vv))+")"
+			tohsva="hsva"+tohsv[3:-1]+", "+str(a)+")"
+			print("hsv",toname,torgb,torgba,tohsl,tohsla,tohsv,tohsva,tohex,tohexa,v)
+			return ["name : "+toname,"hex : "+tohex,"hexA : "+tohexa,"rgb : "+torgb,"rgba : "+torgba,"hsl : "+tohsl,"hsla : "+tohsla,"hsv : "+tohsv,"hsva : "+tohsva]
 		elif k=="name_color":
-			print(v)
+			toname,tohexfromname=self._getName("name",v)
+			if toname:
+				a=1.0
+				tohex="#"+tohexfromname
+				tohexa=tohex+"FF"
+				bgr=self.HexToRgb(tohex[1:])
+				torgb=bgr[3]
+				torgba="rgba"+torgb[3:-1]+", "+str(a)+")"
+				tohsl=self.RgbToHsl(bgr[0],bgr[1],bgr[2])[3]
+				tohsla="hsla"+tohsl[3:-1]+", "+str(a)+")"
+				tohsv=self.RgbToHsv(bgr[0],bgr[1],bgr[2])[3]
+				tohsva="hsva"+tohsv[3:-1]+", "+str(a)+")"
+				print("hex",toname,torgb,torgba,tohsl,tohsla,tohsv,tohsva,tohex,tohexa,v)
+				return ["name : "+toname,"hex : "+tohex,"hexA : "+tohexa,"rgb : "+torgb,"rgba : "+torgba,"hsl : "+tohsl,"hsla : "+tohsla,"hsv : "+tohsv,"hsva : "+tohsva]
+			else:
+				return None
+	def _getName(self, k,v):
+		it=0
+		for i in self.colors[k][:]:
+			if v.lower() == i:
+				return (self.colors["name"][it],self.colors["hex"][it])
+			it+=1
+		return (None,None)
 	def _isValid(self, s, m):
 		if s=="#":
 			p=re.compile(r".*#(?P<hex_color>.*)")
@@ -94,8 +199,8 @@ class color_to_color(sublime_plugin.TextCommand):
 			else:
 				return None
 		elif s=="rgb" or s=="rgba":
-			p=re.compile(r".*rgb\s?a?\(\s?(?P<r_color>\d*)\s?\,\s?(?P<g_color>\d*)\s?\,\s?(?P<b_color>\d*)\s?\,?\s?(?P<a_color>\d*\.?\d?)?\)?")
-			r=p.match(m)
+			# p=re.compile(r".*rgb\s?a?\(\s?(?P<r_color>\d*)\s?\,\s?(?P<g_color>\d*)\s?\,\s?(?P<b_color>\d*)\s?\,?\s?(?P<a_color>\d*\.?\d?)?\)?")
+			r=self.RGB.match(m)
 			if r:
 				f=self._lookUp(s,[int(r.group(1)),int(r.group(2)),int(r.group(3))])
 				if f:
@@ -109,9 +214,9 @@ class color_to_color(sublime_plugin.TextCommand):
 					return {"type":"rgb","name":"- none -","hex":hx,"rgb":rgb,"hsl":hsl,"hsv":hsv}
 			else:
 				return None
-		elif s=="hsl":
-			p=re.compile(r".*hsl\s?\(\s?(\d*\.?\d*)\s?\,\s?(\d*\.?\d*)\%?\s?\,\s?(\d*\.?\d*)\%?\s?\)?")
-			r=p.match(m)
+		elif s=="hsl" or s=="hsla":
+			# p=re.compile(r".*hsl\s?\(\s?(\d*\.?\d*)\s?\,\s?(\d*\.?\d*)\%?\s?\,\s?(\d*\.?\d*)\%?\s?\)?")
+			r=self.HSL.match(m)
 			if r:
 				rgb=self.HslToRgb(float(r.group(1)),float(r.group(2)),float(r.group(3)))
 				hsv=self.RgbToHsv(rgb[0],rgb[1],rgb[2])
@@ -127,9 +232,9 @@ class color_to_color(sublime_plugin.TextCommand):
 				return {"type":"hsl","name":name,"hex":hx,"rgb":rgb,"hsl":hsl,"hsv":hsv}
 			else:
 				return None
-		elif s=="hsv":
-			p=re.compile(r".*hsv\s?\(\s?(\d*\.?\d*)\s?\,\s?(\d*\.?\d*)\%?\s?\,\s?(\d*\.?\d*)\%?\s?\)?")
-			r=p.match(m)
+		elif s=="hsv" or s=="hsva":
+			# p=re.compile(r".*hsv\s?\(\s?(\d*\.?\d*)\s?\,\s?(\d*\.?\d*)\%?\s?\,\s?(\d*\.?\d*)\%?\s?\)?")
+			r=self.HSV.match(m)
 			if r:
 				rgb=self.HsvToRgb(float(r.group(1)),float(r.group(2)),float(r.group(3)))
 				hsl=self.RgbToHsl(rgb[0],rgb[1],rgb[2])
@@ -217,7 +322,7 @@ class color_to_color(sublime_plugin.TextCommand):
 			if b==mx:
 				h = (r - g) / d + 4
 			h/=6
-		strx="hsv("+str(self._rod2(h*360))+", "+str(self._rod2(s*100))+", "+str(self._rod2(v*100))+")"
+		strx="hsv("+str(self._rod2(h*360))+", "+str(self._rod2(s*100))+"%, "+str(self._rod2(v*100))+"%)"
 		return [self._rod2(h*360),self._rod2(s*100),self._rod2(v*100),strx]
 	def HexToRgb(self, hx):
 		r=int("0x"+hx[0:2],16)
